@@ -15,7 +15,7 @@ const OrderHistoryScreen = ({navigation, currentUser}: any) => {
   const loadOrders = async () => {
     const data = await getOrders();
 
-    // 只显示当前用户的订单
+    
     const userOrders = data.filter(
       order => order.customerId === currentUser?.id,
     );
@@ -81,7 +81,7 @@ const OrderHistoryScreen = ({navigation, currentUser}: any) => {
         }
       />
 
-      {/* ✅ Back Button */}
+      
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => {
