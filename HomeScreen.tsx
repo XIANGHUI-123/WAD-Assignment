@@ -44,19 +44,33 @@ const HomeScreen = ({navigation, currentUser, cartCount}: any) => {
         </TouchableOpacity>
       )}
 
-      {/* Quick Stats */}
-      <View style={styles.statsContainer}>
-        <Text style={styles.sectionTitle}>Your Activity</Text>
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <MaterialCommunityIcons name="package-variant" size={28} color="#4F46E5" />
-            <Text style={styles.statValue}>Orders</Text>
-            <Text style={styles.statSubtext}>View history</Text>
+      {/* Rewards Section */}
+      <View style={styles.rewardsContainer}>
+        <Text style={styles.sectionTitle}>Rewards & Savings</Text>
+        <View style={styles.rewardsRow}>
+          <TouchableOpacity 
+            style={styles.rewardCard}
+            onPress={() => navigation.navigate('HomeTab', {screen: 'VouchersList'})}>
+            <MaterialCommunityIcons name="ticket-percent" size={28} color="#D97706" />
+            <Text style={styles.rewardValue}>Vouchers</Text>
+            <Text style={styles.rewardSubtext}>Get discounts</Text>
+          </TouchableOpacity>
+          <View style={styles.rewardCard}>
+            <MaterialCommunityIcons name="star-circle" size={28} color="#F59E0B" />
+            <Text style={styles.rewardValue}>Points</Text>
+            <Text style={styles.pointsValue}>{currentUser?.points || 0}</Text>
+            <Text style={styles.rewardSubtext}>200 pts = 1 book</Text>
           </View>
-          <View style={styles.statCard}>
-            <MaterialCommunityIcons name="heart-outline" size={28} color="#EF4444" />
-            <Text style={styles.statValue}>Favorites</Text>
-            <Text style={styles.statSubtext}>Coming soon</Text>
+        </View>
+        <View style={styles.rewardInfoCard}>
+          <MaterialCommunityIcons name="information" size={20} color="#4F46E5" />
+          <View style={{flex: 1, marginLeft: 12}}>
+            <Text style={styles.rewardInfoTitle}>Earn & Redeem</Text>
+            <Text style={styles.rewardInfoText}>
+              • Earn 1 point per RM spent
+              • Redeem 200 points for a free book
+              • Use vouchers for instant discounts
+            </Text>
           </View>
         </View>
       </View>
@@ -222,7 +236,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  statsContainer: {
+  rewardsContainer: {
     marginBottom: 24,
   },
   sectionTitle: {
@@ -231,11 +245,12 @@ const styles = StyleSheet.create({
     color: '#1E293B',
     marginBottom: 12,
   },
-  statsRow: {
+  rewardsRow: {
     flexDirection: 'row',
     gap: 12,
+    marginBottom: 12,
   },
-  statCard: {
+  rewardCard: {
     flex: 1,
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -244,15 +259,39 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  statValue: {
+  rewardValue: {
     fontSize: 16,
     fontWeight: '700',
     color: '#1E293B',
     marginTop: 8,
   },
-  statSubtext: {
+  pointsValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#F59E0B',
+    marginTop: 4,
+  },
+  rewardSubtext: {
     fontSize: 11,
     color: '#94A3B8',
+    marginTop: 4,
+  },
+  rewardInfoCard: {
+    backgroundColor: '#EEF2FF',
+    borderRadius: 12,
+    padding: 14,
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  rewardInfoTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#4F46E5',
+  },
+  rewardInfoText: {
+    fontSize: 12,
+    color: '#6366F1',
     marginTop: 4,
   },
   actionSection: {
