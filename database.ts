@@ -4,12 +4,14 @@ const USERS_KEY = 'users';
 const CURRENT_USER_KEY = 'currentUser';
 const BOOKS_KEY = 'books';
 const ORDERS_KEY = 'orders';
+const VOUCHERS_KEY = 'vouchers';
 
 export type User = {
   id: number;
   username: string;
   password: string;
   role: 'admin' | 'customer';
+  points: number;
 };
 
 export type Book = {
@@ -31,12 +33,29 @@ export type CartItem = {
   image: string;
 };
 
+export type Voucher = {
+  id: number;
+  code: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  description: string;
+  expiryDate: string;
+  maxUses: number;
+  currentUses: number;
+  isUsed: boolean;
+};
+
 export type Order = {
   id: number;
   customerId: number;
   customerName: string;
   items: CartItem[];
   total: number;
+  discount?: number;
+  finalTotal?: number;
+  voucherApplied?: string;
+  pointsUsed?: number;
+  pointsEarned?: number;
   status: 'Pending' | 'Completed' | 'Cancelled';
   date: string;
 };
@@ -70,6 +89,7 @@ export const registerUser = async (
     username,
     password,
     role: 'customer',
+    points: 0,
   };
 
   await saveUsers([...users, newUser]);
@@ -95,6 +115,27 @@ export const loginUser = async (
 export const getCurrentUser = async (): Promise<User | null> => {
   const data = await AsyncStorage.getItem(CURRENT_USER_KEY);
   return data ? JSON.parse(data) : null;
+};
+
+export const updateUserPoints = async (userId: number, pointsToAdd: number): Promise<User | null> => {
+  const users = await getUsers();
+  const updatedUsers = users.map(u =>
+    u.id === userId ? {...u, points: (u.points || 0) + pointsToAdd} : u,
+  );
+  
+  await saveUsers(updatedUsers);
+  
+  // Update current user if it's the logged-in user
+  const currentUser = await getCurrentUser();
+  if (currentUser && currentUser.id === userId) {
+    const updatedUser = updatedUsers.find(u => u.id === userId) || null;
+    if (updatedUser) {
+      await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updatedUser));
+    }
+    return updatedUser;
+  }
+  
+  return updatedUsers.find(u => u.id === userId) || null;
 };
 
 export const logoutUser = async () => {
@@ -170,6 +211,53 @@ export const deleteOrder = async (id: number) => {
 };
 
 //////////////////////////
+// VOUCHER
+//////////////////////////
+
+export const getVouchers = async (): Promise<Voucher[]> => {
+  const data = await AsyncStorage.getItem(VOUCHERS_KEY);
+  return data ? JSON.parse(data) : [];
+};
+
+export const saveVouchers = async (vouchers: Voucher[]) => {
+  await AsyncStorage.setItem(VOUCHERS_KEY, JSON.stringify(vouchers));
+};
+
+export const getAvailableVouchers = async (): Promise<Voucher[]> => {
+  const vouchers = await getVouchers();
+  return vouchers.filter(v => !v.isUsed && v.currentUses < v.maxUses);
+};
+
+export const markVoucherAsUsed = async (voucherId: number) => {
+  const vouchers = await getVouchers();
+  const updated = vouchers.map(v =>
+    v.id === voucherId 
+      ? {...v, currentUses: v.currentUses + 1, isUsed: v.currentUses + 1 >= v.maxUses}
+      : v,
+  );
+  await saveVouchers(updated);
+};
+
+export const addVoucher = async (voucher: Voucher) => {
+  const vouchers = await getVouchers();
+  await saveVouchers([...vouchers, voucher]);
+};
+
+export const updateVoucher = async (updatedVoucher: Voucher) => {
+  const vouchers = await getVouchers();
+  const updated = vouchers.map(v =>
+    v.id === updatedVoucher.id ? updatedVoucher : v,
+  );
+  await saveVouchers(updated);
+};
+
+export const deleteVoucher = async (id: number) => {
+  const vouchers = await getVouchers();
+  const updated = vouchers.filter(v => v.id !== id);
+  await saveVouchers(updated);
+};
+
+//////////////////////////
 // INIT (VERY IMPORTANT)
 //////////////////////////
 
@@ -177,6 +265,7 @@ export const seedAdminAndBooks = async () => {
   let users = await getUsers();
   let books = await getBooks();
   let orders = await getOrders();
+  let vouchers = await getVouchers();
 
   //////////////////////////
   // USERS (Admin + Custom)
@@ -189,70 +278,88 @@ export const seedAdminAndBooks = async () => {
         username: 'admin',
         password: 'admin123',
         role: 'admin',
+        points: 0,
       },
       {
         id: 2,
         username: 'Alicia',
         password: 'Alicia123',
         role: 'customer',
+        points: 0,
       },
       {
         id: 3,
         username: 'Brian',
         password: 'Brian123',
         role: 'customer',
+        points: 0,
       },
       {
         id: 4,
         username: 'Cindy',
         password: 'Cindy123',
         role: 'customer',
+        points: 0,
       },
       {
         id: 5,
         username: 'David',
         password: 'David123',
         role: 'customer',
+        points: 0,
       },
       {
         id: 6,
         username: 'Emma',
         password: 'Emma123',
         role: 'customer',
+        points: 0,
       },
       {
         id: 7,
         username: 'Frank',
         password: 'Frank123',
         role: 'customer',
+        points: 0,
       },
       {
         id: 8,
         username: 'Grace',
         password: 'Grace123',
         role: 'customer',
+        points: 0,
       },
       {
         id: 9,
         username: 'Henry',
         password: 'Henry123',
         role: 'customer',
+        points: 0,
       },
       {
         id: 10,
         username: 'Ivy',
         password: 'Ivy123',
         role: 'customer',
+        points: 0,
       },
       {
         id: 11,
         username: 'Jack',
         password: 'Jack123',
         role: 'customer',
+        points: 0,
       },
     ];
 
     await saveUsers(users);
+  } else {
+    // Update existing users to have points field if they don't
+    const updatedUsers = users.map(u => ({
+      ...u,
+      points: u.points !== undefined ? u.points : 0,
+    }));
+    await saveUsers(updatedUsers);
   }
 
   //////////////////////////
@@ -272,5 +379,71 @@ export const seedAdminAndBooks = async () => {
     ];
 
     await saveBooks(books);
+  }
+
+  //////////////////////////
+  // VOUCHERS
+  //////////////////////////
+
+  if (vouchers.length === 0) {
+    vouchers = [
+      {
+        id: 1,
+        code: 'SAVE10',
+        discountType: 'percentage',
+        discountValue: 10,
+        description: 'Save 10% on your purchase',
+        expiryDate: '2025-12-31',
+        maxUses: 100,
+        currentUses: 0,
+        isUsed: false,
+      },
+      {
+        id: 2,
+        code: 'SAVE20',
+        discountType: 'percentage',
+        discountValue: 20,
+        description: 'Save 20% on your purchase',
+        expiryDate: '2025-12-31',
+        maxUses: 50,
+        currentUses: 0,
+        isUsed: false,
+      },
+      {
+        id: 3,
+        code: 'FLAT100',
+        discountType: 'fixed',
+        discountValue: 100,
+        description: 'Flat RM 100 discount',
+        expiryDate: '2025-12-31',
+        maxUses: 30,
+        currentUses: 0,
+        isUsed: false,
+      },
+      {
+        id: 4,
+        code: 'WELCOME15',
+        discountType: 'percentage',
+        discountValue: 15,
+        description: 'Welcome bonus - 15% off',
+        expiryDate: '2025-12-31',
+        maxUses: 200,
+        currentUses: 0,
+        isUsed: false,
+      },
+      {
+        id: 5,
+        code: 'FLAT50',
+        discountType: 'fixed',
+        discountValue: 50,
+        description: 'Flat RM 50 discount',
+        expiryDate: '2025-12-31',
+        maxUses: 75,
+        currentUses: 0,
+        isUsed: false,
+      },
+    ];
+
+    await saveVouchers(vouchers);
   }
 };  
