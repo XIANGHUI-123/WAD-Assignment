@@ -38,7 +38,9 @@ const ProductScreen = ({navigation, cart, setCart}: any) => {
 
     if (existing) {
       const updatedCart = cart.map((item: CartItem) =>
-        item.bookId === book.id ? {...item, quantity: item.quantity + 1} : item,
+        item.bookId === book.id
+          ? {...item, quantity: item.quantity + 1}
+          : item,
       );
       setCart(updatedCart);
     } else {
@@ -49,10 +51,11 @@ const ProductScreen = ({navigation, cart, setCart}: any) => {
         quantity: 1,
         image: book.image,
       };
+
       setCart([...cart, newItem]);
     }
 
-    Alert.alert('Added', `${book.title} added to cart.`);
+    navigation.navigate('Cart');
   };
 
   const renderBook = ({item}: {item: Book}) => {
@@ -63,11 +66,13 @@ const ProductScreen = ({navigation, cart, setCart}: any) => {
       <View style={styles.card}>
         <View style={styles.imageContainer}>
           <Image source={{uri: item.image}} style={styles.image} />
+
           {isOutOfStock && (
             <View style={styles.outOfStockBadge}>
               <Text style={styles.outOfStockText}>Out of Stock</Text>
             </View>
           )}
+
           {itemInCart && (
             <View style={styles.cartBadge}>
               <Text style={styles.cartBadgeText}>{itemInCart.quantity}</Text>
@@ -79,6 +84,7 @@ const ProductScreen = ({navigation, cart, setCart}: any) => {
           <Text style={styles.title} numberOfLines={2}>
             {item.title}
           </Text>
+
           <Text style={styles.author} numberOfLines={1}>
             {item.author}
           </Text>
@@ -87,6 +93,7 @@ const ProductScreen = ({navigation, cart, setCart}: any) => {
             <View style={styles.infoBadge}>
               <Text style={styles.infoBadgeText}>{item.category}</Text>
             </View>
+
             <Text style={styles.stockInfo}>
               {item.stock > 0 ? `${item.stock} left` : 'Out of Stock'}
             </Text>
@@ -95,10 +102,7 @@ const ProductScreen = ({navigation, cart, setCart}: any) => {
           <Text style={styles.price}>RM {item.price.toFixed(2)}</Text>
 
           <TouchableOpacity
-            style={[
-              styles.button,
-              isOutOfStock && styles.buttonDisabled,
-            ]}
+            style={[styles.button, isOutOfStock && styles.buttonDisabled]}
             onPress={() => addToCart(item)}
             disabled={isOutOfStock}>
             <MaterialCommunityIcons
@@ -107,6 +111,7 @@ const ProductScreen = ({navigation, cart, setCart}: any) => {
               color="#fff"
               style={{marginRight: 6}}
             />
+
             <Text style={styles.buttonText}>
               {itemInCart ? 'Add More' : 'Add to Cart'}
             </Text>
@@ -137,6 +142,7 @@ const ProductScreen = ({navigation, cart, setCart}: any) => {
               size={24}
               color="#4F46E5"
             />
+
             <View style={styles.cartBadgeHeader}>
               <Text style={styles.cartBadgeHeaderText}>{cart.length}</Text>
             </View>
@@ -162,8 +168,14 @@ const ProductScreen = ({navigation, cart, setCart}: any) => {
             color="#fff"
             style={{marginRight: 10}}
           />
+
           <Text style={styles.cartButtonText}>
-            View Cart ({cart.reduce((sum: number, item: CartItem) => sum + item.quantity, 0)} items)
+            View Cart (
+            {cart.reduce(
+              (sum: number, item: CartItem) => sum + item.quantity,
+              0,
+            )}{' '}
+            items)
           </Text>
         </TouchableOpacity>
       )}
