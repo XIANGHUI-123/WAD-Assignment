@@ -1,0 +1,154 @@
+import React, {useState} from 'react';
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+} from 'react-native';
+import {addBook, updateBook} from '../database';
+
+const BookFormScreen = ({route, navigation}: any) => {
+  const editingBook = route.params?.book;
+
+  const [title, setTitle] = useState(editingBook?.title || '');
+  const [author, setAuthor] = useState(editingBook?.author || '');
+  const [price, setPrice] = useState(
+    editingBook ? String(editingBook.price) : '',
+  );
+  const [stock, setStock] = useState(
+    editingBook ? String(editingBook.stock) : '',
+  );
+  const [category, setCategory] = useState(editingBook?.category || '');
+  const [image, setImage] = useState(editingBook?.image || '');
+  const [description, setDescription] = useState(
+    editingBook?.description || '',
+  );
+
+  const handleSave = async () => {
+    if (!title || !author || !price || !stock || !category || !image) {
+      Alert.alert('Error', 'Please fill in all required fields');
+      return;
+    }
+
+    const bookData = {
+      id: editingBook?.id || Date.now(),
+      title,
+      author,
+      price: Number(price),
+      stock: Number(stock),
+      category,
+      image,
+      description,
+    };
+
+    if (editingBook) {
+      await updateBook(bookData);
+      Alert.alert('Success', 'Book updated successfully');
+    } else {
+      await addBook(bookData);
+      Alert.alert('Success', 'Book added successfully');
+    }
+
+    navigation.goBack();
+  };
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={{padding: 20}}>
+      <Text style={styles.header}>
+        {editingBook ? 'Edit Book' : 'Add New Book'}
+      </Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Book title"
+        value={title}
+        onChangeText={setTitle}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Author"
+        value={author}
+        onChangeText={setAuthor}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Price"
+        keyboardType="numeric"
+        value={price}
+        onChangeText={setPrice}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Stock"
+        keyboardType="numeric"
+        value={stock}
+        onChangeText={setStock}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Category"
+        value={category}
+        onChangeText={setCategory}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Image link"
+        value={image}
+        onChangeText={setImage}
+      />
+
+      <TextInput
+        style={[styles.input, styles.multiline]}
+        placeholder="Description"
+        value={description}
+        onChangeText={setDescription}
+        multiline
+      />
+
+      <TouchableOpacity style={styles.button} onPress={handleSave}>
+        <Text style={styles.buttonText}>
+          {editingBook ? 'Update Book' : 'Save Book'}
+        </Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+};
+
+export default BookFormScreen;
+
+const styles = StyleSheet.create({
+  container: {flex: 1, backgroundColor: '#fff'},
+  header: {
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 20,
+  },
+  input: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 14,
+  },
+  multiline: {
+    height: 110,
+    textAlignVertical: 'top',
+  },
+  button: {
+    backgroundColor: '#4F46E5',
+    padding: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  buttonText: {color: '#fff', fontWeight: '700'},
+});
