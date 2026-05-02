@@ -8,8 +8,10 @@ import {
   Alert,
 } from 'react-native';
 import {updateBook} from './database';
+import {useAppTheme} from './theme';
 
 const EditBookScreen = ({route, navigation}: any) => {
+  const {theme} = useAppTheme();
   const {book} = route.params;
 
   const [title, setTitle] = useState(book.title);
@@ -34,30 +36,30 @@ const EditBookScreen = ({route, navigation}: any) => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Edit Book</Text>
+    <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
+      <Text style={[styles.title, {color: theme.colors.text}]}>Edit Book</Text>
 
-      <TextInput style={styles.input} value={title} onChangeText={setTitle} />
-      <TextInput style={styles.input} value={author} onChangeText={setAuthor} />
+      <TextInput style={[styles.input, {backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text}]} value={title} onChangeText={setTitle} placeholderTextColor={theme.colors.mutedText} />
+      <TextInput style={[styles.input, {backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text}]} value={author} onChangeText={setAuthor} placeholderTextColor={theme.colors.mutedText} />
       <TextInput
-        style={styles.input}
+        style={[styles.input, {backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text}]}
         value={price}
         onChangeText={setPrice}
         keyboardType="numeric"
       />
       <TextInput
-        style={styles.input}
+        style={[styles.input, {backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text}]}
         value={stock}
         onChangeText={setStock}
         keyboardType="numeric"
       />
       <TextInput
-        style={styles.input}
+        style={[styles.input, {backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text}]}
         value={category}
         onChangeText={setCategory}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleUpdateBook}>
+      <TouchableOpacity style={[styles.button, {backgroundColor: theme.colors.primary}]} onPress={handleUpdateBook}>
         <Text style={styles.buttonText}>Update Book</Text>
       </TouchableOpacity>
     </View>
@@ -67,7 +69,7 @@ const EditBookScreen = ({route, navigation}: any) => {
 export default EditBookScreen;
 
 const styles = StyleSheet.create({
-  container: {flex: 1, padding: 20, backgroundColor: '#fff'},
+  container: {flex: 1, padding: 20},
   title: {fontSize: 26, fontWeight: 'bold', marginBottom: 20},
   input: {
     borderWidth: 1,
@@ -77,7 +79,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   button: {
-    backgroundColor: '#4F46E5',
     padding: 14,
     borderRadius: 10,
     alignItems: 'center',
