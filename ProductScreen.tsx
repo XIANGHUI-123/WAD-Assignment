@@ -12,14 +12,99 @@ import {
 } from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {Book, CartItem, getBooks} from './database';
+import {Book, CartItem, getBooks, saveBooks} from './database';
+import {useAppTheme} from './theme';
+
+type OpenLibraryDoc = {
+  key?: string;
+  title?: string;
+  author_name?: string[];
+  cover_i?: number;
+  first_publish_year?: number;
+};
+
+
+const PROGRAMMING_BOOKS_API =
+  'https://openlibrary.org/search.json?q=programming&limit=10';
+  
+const createStableApiBookId = (doc: OpenLibraryDoc, index: number) => {
+  // Use the OpenLibrary key directly as it's guaranteed to be unique
+  // Prefix with 'api-' to avoid conflicts with local book IDs
+  if (doc.key) {
+    return `api-${doc.key}` as any;
+  }
+  // Fallback for books without keys
+  return `api-programming-${index}` as any;
+};
+
+const convertApiBookToBook = (doc: OpenLibraryDoc, index: number): Book => {
+  const title = doc.title || 'Programming Book';
+  const author = doc.author_name?.[0] || 'Unknown Author';
+
+  return {
+    id: createStableApiBookId(doc, index),
+    title,
+    author,
+    price: 25 + index * 3,
+    stock: 10,
+    category: 'Programming API',
+    image: doc.cover_i
+      ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`
+      : 'https://via.placeholder.com/150',
+    description: `Imported from Open Library Web API${
+      doc.first_publish_year ? `, first published in ${doc.first_publish_year}` : ''
+    }.`,
+  };
+};
 
 const ProductScreen = ({navigation, cart, setCart}: any) => {
+  const {theme} = useAppTheme();
   const [books, setBooks] = useState<Book[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [cloudStatus, setCloudStatus] = useState('Cloud API: not loaded');
 
   const loadBooks = async () => {
-    const data = await getBooks();
-    setBooks(data);
+    setRefreshing(true);
+
+    try {
+      const localBooks = await getBooks();
+
+      const response = await fetch(PROGRAMMING_BOOKS_API);
+
+      if (!response.ok) {
+        throw new Error('Failed to connect to Open Library API');
+      }
+
+      const apiData = await response.json();
+      const apiBooks: Book[] = (apiData.docs || [])
+        .slice(0, 10)
+        .map((doc: OpenLibraryDoc, index: number) =>
+          convertApiBookToBook(doc, index),
+        );
+
+      const existingTitles = new Set(
+        localBooks.map(book => book.title.toLowerCase().trim()),
+      );
+
+      const newApiBooks = apiBooks.filter(
+        book => !existingTitles.has(book.title.toLowerCase().trim()),
+      );
+
+      const mergedBooks = [...localBooks, ...newApiBooks];
+
+      if (newApiBooks.length > 0) {
+        await saveBooks(mergedBooks);
+      }
+
+      setBooks(mergedBooks);
+      setCloudStatus(`Cloud API: ${apiBooks.length} programming books received`);
+    } catch (error) {
+      const localBooks = await getBooks();
+      setBooks(localBooks);
+      setCloudStatus('Cloud API: offline, showing local books only');
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   useFocusEffect(
@@ -37,6 +122,14 @@ const ProductScreen = ({navigation, cart, setCart}: any) => {
     const existing = cart.find((item: CartItem) => item.bookId === book.id);
 
     if (existing) {
+      if (existing.quantity >= book.stock) {
+        Alert.alert(
+          'Stock Limit Reached',
+          'You cannot add more of this book than is currently in stock.',
+        );
+        return;
+      }
+
       const updatedCart = cart.map((item: CartItem) =>
         item.bookId === book.id
           ? {...item, quantity: item.quantity + 1}
@@ -62,10 +155,29 @@ const ProductScreen = ({navigation, cart, setCart}: any) => {
     const itemInCart = cart.find((c: CartItem) => c.bookId === item.id);
     const isOutOfStock = item.stock <= 0;
 
+    const imageSource =
+      item.image && typeof item.image === 'string' && item.image.trim() !== ''
+        ? {uri: item.image}
+        : {uri: 'https://via.placeholder.com/150'};
+
     return (
-      <View style={styles.card}>
-        <View style={styles.imageContainer}>
-          <Image source={{uri: item.image}} style={styles.image} />
+      <View
+        style={[
+          styles.card,
+          {backgroundColor: theme.colors.surface, borderColor: theme.colors.border},
+        ]}>
+        <View
+          style={[
+            styles.imageContainer,
+            {backgroundColor: theme.colors.secondaryBackground},
+          ]}>
+          <Image source={imageSource} style={styles.image} />
+
+          {item.category === 'Programming API' && (
+            <View style={styles.cloudBadge}>
+              <Text style={styles.cloudBadgeText}>API</Text>
+            </View>
+          )}
 
           {isOutOfStock && (
             <View style={styles.outOfStockBadge}>
@@ -81,28 +193,42 @@ const ProductScreen = ({navigation, cart, setCart}: any) => {
         </View>
 
         <View style={styles.content}>
-          <Text style={styles.title} numberOfLines={2}>
+          <Text style={[styles.title, {color: theme.colors.text}]} numberOfLines={2}>
             {item.title}
           </Text>
 
-          <Text style={styles.author} numberOfLines={1}>
+          <Text
+            style={[styles.author, {color: theme.colors.mutedText}]}
+            numberOfLines={1}>
             {item.author}
           </Text>
 
           <View style={styles.infoRow}>
-            <View style={styles.infoBadge}>
-              <Text style={styles.infoBadgeText}>{item.category}</Text>
+            <View
+              style={[
+                styles.infoBadge,
+                {backgroundColor: theme.colors.secondaryBackground},
+              ]}>
+              <Text style={[styles.infoBadgeText, {color: theme.colors.text}]}>
+                {item.category}
+              </Text>
             </View>
 
-            <Text style={styles.stockInfo}>
+            <Text style={[styles.stockInfo, {color: theme.colors.primary}]}>
               {item.stock > 0 ? `${item.stock} left` : 'Out of Stock'}
             </Text>
           </View>
 
-          <Text style={styles.price}>RM {item.price.toFixed(2)}</Text>
+          <Text style={[styles.price, {color: theme.colors.primary}]}>
+            RM {typeof item.price === 'number' ? item.price.toFixed(2) : '0.00'}
+          </Text>
 
           <TouchableOpacity
-            style={[styles.button, isOutOfStock && styles.buttonDisabled]}
+            style={[
+              styles.button,
+              {backgroundColor: theme.colors.primary},
+              isOutOfStock && styles.buttonDisabled,
+            ]}
             onPress={() => addToCart(item)}
             disabled={isOutOfStock}>
             <MaterialCommunityIcons
@@ -121,16 +247,30 @@ const ProductScreen = ({navigation, cart, setCart}: any) => {
     );
   };
 
+  const totalItems = cart.reduce(
+    (sum: number, item: CartItem) => sum + item.quantity,
+    0,
+  );
+
   return (
     <ScrollView
-      style={styles.container}
+      style={[styles.container, {backgroundColor: theme.colors.background}]}
       refreshControl={
-        <RefreshControl refreshing={false} onRefresh={loadBooks} />
+        <RefreshControl refreshing={refreshing} onRefresh={loadBooks} />
       }>
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          {backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border},
+        ]}>
         <View>
-          <Text style={styles.headerTitle}>Books</Text>
-          <Text style={styles.headerSubtitle}>{books.length} available</Text>
+          <Text style={[styles.headerTitle, {color: theme.colors.text}]}>Books</Text>
+          <Text style={[styles.headerSubtitle, {color: theme.colors.mutedText}]}>
+            {books.length} available
+          </Text>
+          <Text style={[styles.apiStatus, {color: theme.colors.primary}]}>
+            {cloudStatus}
+          </Text>
         </View>
 
         {cart.length > 0 && (
@@ -140,11 +280,11 @@ const ProductScreen = ({navigation, cart, setCart}: any) => {
             <MaterialCommunityIcons
               name="cart-outline"
               size={24}
-              color="#4F46E5"
+              color={theme.colors.primary}
             />
 
             <View style={styles.cartBadgeHeader}>
-              <Text style={styles.cartBadgeHeaderText}>{cart.length}</Text>
+              <Text style={styles.cartBadgeHeaderText}>{totalItems}</Text>
             </View>
           </TouchableOpacity>
         )}
@@ -152,35 +292,20 @@ const ProductScreen = ({navigation, cart, setCart}: any) => {
 
       <FlatList
         data={books}
-        keyExtractor={item => item.id.toString()}
+        keyExtractor={(item) => item.id.toString()}
         renderItem={renderBook}
-        scrollEnabled={false}
-        contentContainerStyle={{paddingTop: 12, paddingBottom: 12}}
-      />
+         scrollEnabled={false}
+       />
 
       {cart.length > 0 && (
         <TouchableOpacity
-          style={styles.cartButton}
+          style={[styles.checkoutButton, {backgroundColor: theme.colors.primary}]}
           onPress={() => navigation.navigate('Cart')}>
-          <MaterialCommunityIcons
-            name="cart-outline"
-            size={20}
-            color="#fff"
-            style={{marginRight: 10}}
-          />
-
-          <Text style={styles.cartButtonText}>
-            View Cart (
-            {cart.reduce(
-              (sum: number, item: CartItem) => sum + item.quantity,
-              0,
-            )}{' '}
-            items)
+          <Text style={styles.checkoutText}>
+            View Cart ({totalItems} item{totalItems !== 1 ? 's' : ''})
           </Text>
         </TouchableOpacity>
       )}
-
-      <View style={{height: 20}} />
     </ScrollView>
   );
 };
@@ -188,174 +313,104 @@ const ProductScreen = ({navigation, cart, setCart}: any) => {
 export default ProductScreen;
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#F8FAFC'},
+  container: {flex: 1},
   header: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    padding: 16,
+    borderBottomWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#1E293B',
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 4,
-  },
-  cartHeaderButton: {
-    position: 'relative',
-    padding: 10,
-  },
+  headerTitle: {fontSize: 28, fontWeight: '800'},
+  headerSubtitle: {fontSize: 14, marginTop: 4},
+  apiStatus: {fontSize: 12, marginTop: 6, fontWeight: '700'},
+  cartHeaderButton: {padding: 8, position: 'relative'},
   cartBadgeHeader: {
     position: 'absolute',
-    top: 0,
     right: 0,
+    top: 0,
     backgroundColor: '#EF4444',
     borderRadius: 10,
     minWidth: 20,
     height: 20,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  cartBadgeHeaderText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 12,
-  },
+  cartBadgeHeaderText: {color: '#fff', fontSize: 12, fontWeight: '700'},
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    marginBottom: 12,
-    marginHorizontal: 12,
-    overflow: 'hidden',
+    marginHorizontal: 16,
+    marginBottom: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    overflow: 'hidden',
     flexDirection: 'row',
   },
   imageContainer: {
+    width: 120,
+    height: 170,
     position: 'relative',
-    width: 100,
-    height: 140,
-    backgroundColor: '#F1F5F9',
   },
-  image: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+  image: {width: '100%', height: '100%', resizeMode: 'cover'},
+  cloudBadge: {
+    position: 'absolute',
+    left: 8,
+    top: 8,
+    backgroundColor: '#10B981',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
   },
+  cloudBadgeText: {color: '#fff', fontSize: 11, fontWeight: '800'},
   outOfStockBadge: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    left: 8,
+    bottom: 8,
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
   },
-  outOfStockText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 11,
-    textAlign: 'center',
-  },
+  outOfStockText: {color: '#fff', fontSize: 11, fontWeight: '700'},
   cartBadge: {
     position: 'absolute',
-    top: 6,
-    right: 6,
-    backgroundColor: '#EF4444',
-    borderRadius: 10,
-    minWidth: 24,
-    height: 24,
-    justifyContent: 'center',
+    right: 8,
+    top: 8,
+    backgroundColor: '#4F46E5',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  cartBadgeText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 12,
-  },
-  content: {
-    flex: 1,
-    padding: 12,
-    justifyContent: 'space-between',
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1E293B',
-  },
-  author: {
-    color: '#64748B',
-    marginTop: 2,
-    fontSize: 12,
-  },
+  cartBadgeText: {color: '#fff', fontWeight: '800'},
+  content: {flex: 1, padding: 14},
+  title: {fontSize: 16, fontWeight: '800', marginBottom: 6},
+  author: {fontSize: 13, marginBottom: 10},
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
-    gap: 8,
+    marginBottom: 10,
+    justifyContent: 'space-between',
   },
-  infoBadge: {
-    backgroundColor: '#EEF2FF',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  infoBadgeText: {
-    fontSize: 11,
-    color: '#4F46E5',
-    fontWeight: '600',
-  },
-  stockInfo: {
-    fontSize: 11,
-    color: '#16A34A',
-    fontWeight: '600',
-  },
-  price: {
-    marginTop: 8,
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#059669',
-  },
+  infoBadge: {paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, maxWidth: 110},
+  infoBadgeText: {fontSize: 11, fontWeight: '700'},
+  stockInfo: {fontSize: 12, fontWeight: '700'},
+  price: {fontSize: 18, fontWeight: '900', marginBottom: 12},
   button: {
-    marginTop: 8,
-    backgroundColor: '#4F46E5',
-    padding: 8,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  buttonDisabled: {
-    backgroundColor: '#CBD5E1',
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 12,
-  },
-  cartButton: {
-    marginHorizontal: 12,
-    marginBottom: 16,
-    backgroundColor: '#059669',
-    padding: 14,
+    paddingVertical: 10,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
   },
-  cartButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 15,
+  buttonDisabled: {backgroundColor: '#94A3B8'},
+  buttonText: {color: '#fff', fontWeight: '800'},
+  checkoutButton: {
+    marginHorizontal: 16,
+    marginBottom: 24,
+    padding: 16,
+    borderRadius: 14,
+    alignItems: 'center',
   },
+  checkoutText: {color: '#fff', fontWeight: '800', fontSize: 16},
 });
