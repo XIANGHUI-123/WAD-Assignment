@@ -20,8 +20,10 @@ import {
   markVoucherAsUsed,
   getVouchers,
 } from './database';
+import {useAppTheme} from './theme';
 
 const CartScreen = ({cart, setCart, currentUser, navigation, onOrderSuccess}: any) => {
+  const {theme} = useAppTheme();
   const [voucherCode, setVoucherCode] = useState('');
   const [appliedVoucher, setAppliedVoucher] = useState<{code: string; discountType: string; discountValue: number} | null>(null);
   const [usePoints, setUsePoints] = useState(false);
@@ -38,11 +40,21 @@ const CartScreen = ({cart, setCart, currentUser, navigation, onOrderSuccess}: an
       : appliedVoucher.discountValue) : 0;
 
   const pointsDiscount = usePoints && currentUser?.points >= 200 ? 15 : 0;
+  const pointsToSpend = usePoints && currentUser?.points >= 200 ? 200 : 0;
   
   const total = Math.max(0, subtotal - voucherDiscount - pointsDiscount);
-  const pointsEarned = Math.floor(subtotal);
+  const pointsEarned = Math.floor(total);
 
-  const increaseQty = (bookId: number) => {
+  const increaseQty = async (bookId: number) => {
+    const books = await getBooks();
+    const book = books.find(b => b.id === bookId);
+    
+    const item = cart.find((i: CartItem) => i.bookId === bookId);
+    if (book && item && item.quantity >= book.stock) {
+      Alert.alert('Stock Limit Reached', 'You cannot add more of this book than is currently in stock.');
+      return;
+    }
+
     const updated = cart.map((item: CartItem) =>
       item.bookId === bookId ? {...item, quantity: item.quantity + 1} : item,
     );
@@ -73,9 +85,18 @@ const CartScreen = ({cart, setCart, currentUser, navigation, onOrderSuccess}: an
     try {
       const vouchers = await getVouchers();
       const voucher = vouchers.find(
-        v => v.code.toUpperCase() === voucherCode.toUpperCase() && 
-             !v.isUsed && 
-             v.currentUses < v.maxUses
+        v => {
+          const expiryDate = new Date(v.expiryDate);
+          expiryDate.setHours(0, 0, 0, 0);
+
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          return v.code.toUpperCase() === voucherCode.toUpperCase() && 
+            !v.isUsed && 
+            v.currentUses < v.maxUses &&
+            expiryDate >= today;
+        }
       );
 
       if (voucher) {
@@ -101,7 +122,7 @@ const CartScreen = ({cart, setCart, currentUser, navigation, onOrderSuccess}: an
 
   const toggleUsePoints = () => {
     if (!usePoints && currentUser?.points < 200) {
-      Alert.alert('Insufficient Points', 'You need at least 200 points to redeem a free book.');
+      Alert.alert('Insufficient Points', 'You need at least 200 points to redeem a RM15 discount.');
       return;
     }
     setUsePoints(!usePoints);
@@ -110,6 +131,11 @@ const CartScreen = ({cart, setCart, currentUser, navigation, onOrderSuccess}: an
   const placeOrder = async () => {
     if (cart.length === 0) {
       Alert.alert('Cart Empty', 'Please add books before checkout.');
+      return;
+    }
+
+    if (!currentUser) {
+      Alert.alert('Session Expired', 'Please log in again before placing an order.');
       return;
     }
 
@@ -158,7 +184,7 @@ const CartScreen = ({cart, setCart, currentUser, navigation, onOrderSuccess}: an
         discount: discount,
         finalTotal: total,
         voucherApplied: appliedVoucher?.code,
-        pointsUsed: usePoints ? currentUser?.points : 0,
+        pointsUsed: pointsToSpend,
         pointsEarned: pointsEarned,
         status: 'Pending',
         date: new Date().toLocaleString(),
@@ -177,8 +203,8 @@ const CartScreen = ({cart, setCart, currentUser, navigation, onOrderSuccess}: an
       }
 
       // Deduct points if redeemed
-      if (usePoints) {
-        await updateUserPoints(currentUser.id, -currentUser.points);
+      if (pointsToSpend > 0) {
+        await updateUserPoints(currentUser.id, -pointsToSpend);
       }
 
       setCart([]);
@@ -206,37 +232,33 @@ const CartScreen = ({cart, setCart, currentUser, navigation, onOrderSuccess}: an
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
       <FlatList
         data={cart}
         keyExtractor={item => item.bookId.toString()}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <MaterialCommunityIcons
-              name="cart"
-              size={64}
-              color="#CBD5E1"
-            />
-            <Text style={styles.emptyText}>Your cart is empty</Text>
-            <Text style={styles.emptySubtext}>
+            <MaterialCommunityIcons name="cart" size={64} color={theme.colors.mutedText} />
+            <Text style={[styles.emptyText, {color: theme.colors.text}]}>Your cart is empty</Text>
+            <Text style={[styles.emptySubtext, {color: theme.colors.mutedText}]}>
               Add some books to get started!
             </Text>
             <TouchableOpacity
-              style={styles.browseButton}
+              style={[styles.browseButton, {backgroundColor: theme.colors.primary}]}
               onPress={() => navigation.goBack()}>
               <Text style={styles.browseButtonText}>Continue Shopping</Text>
             </TouchableOpacity>
           </View>
         }
         renderItem={({item}) => (
-          <View style={styles.card}>
-            <Image source={{uri: item.image}} style={styles.image} />
+          <View style={[styles.card, {backgroundColor: theme.colors.surface, borderColor: theme.colors.border}]}>
+            <Image source={{uri: item.image}} style={[styles.image, {backgroundColor: theme.colors.secondaryBackground}]} />
             <View style={{flex: 1, marginRight: 8}}>
-              <Text style={styles.title} numberOfLines={2}>
+              <Text style={[styles.title, {color: theme.colors.text}]} numberOfLines={2}>
                 {item.title}
               </Text>
-              <Text style={styles.price}>RM {item.price.toFixed(2)}</Text>
-              <Text style={styles.subtotal}>
+              <Text style={[styles.price, {color: theme.colors.primary}]}>RM {item.price.toFixed(2)}</Text>
+              <Text style={[styles.subtotal, {color: theme.colors.mutedText}]}>
                 Subtotal: RM {(item.price * item.quantity).toFixed(2)}
               </Text>
 
@@ -265,15 +287,15 @@ const CartScreen = ({cart, setCart, currentUser, navigation, onOrderSuccess}: an
         )}
         ListFooterComponent={
           cart.length > 0 ? (
-            <View style={styles.footer}>
+            <View style={[styles.footer, {backgroundColor: theme.colors.background}]}>
               {/* Voucher Section */}
-              <View style={styles.promoSection}>
-                <Text style={styles.promoTitle}>Apply Voucher</Text>
+              <View style={[styles.promoSection, {backgroundColor: theme.colors.surface, borderColor: theme.colors.border}]}>
+                <Text style={[styles.promoTitle, {color: theme.colors.text}]}>Apply Voucher</Text>
                 <View style={styles.voucherInputContainer}>
                   <TextInput
-                    style={styles.voucherInput}
+                    style={[styles.voucherInput, {backgroundColor: theme.colors.background, borderColor: theme.colors.border, color: theme.colors.text}]}
                     placeholder="Enter voucher code"
-                    placeholderTextColor="#94A3B8"
+                    placeholderTextColor={theme.colors.mutedText}
                     value={voucherCode}
                     onChangeText={setVoucherCode}
                     editable={!appliedVoucher}
@@ -302,10 +324,10 @@ const CartScreen = ({cart, setCart, currentUser, navigation, onOrderSuccess}: an
               </View>
 
               {/* Points Section */}
-              <View style={styles.promoSection}>
+              <View style={[styles.promoSection, {backgroundColor: theme.colors.surface, borderColor: theme.colors.border}]}>
                 <View style={styles.pointsHeader}>
-                  <Text style={styles.promoTitle}>Redeem Points</Text>
-                  <Text style={styles.pointsBalance}>Balance: {currentUser?.points || 0}</Text>
+                  <Text style={[styles.promoTitle, {color: theme.colors.text}]}>Redeem Points</Text>
+                  <Text style={[styles.pointsBalance, {color: theme.colors.primary}]}>Balance: {currentUser?.points || 0}</Text>
                 </View>
                 <TouchableOpacity
                   style={[styles.pointsToggle, usePoints && styles.pointsToggleActive]}
@@ -316,7 +338,7 @@ const CartScreen = ({cart, setCart, currentUser, navigation, onOrderSuccess}: an
                     )}
                   </View>
                   <View style={{flex: 1}}>
-                    <Text style={styles.pointsToggleText}>
+                    <Text style={[styles.pointsToggleText, {color: theme.colors.text}]}>
                       {currentUser?.points >= 200 ? `Redeem 200 points for free book` : 'Not enough points (need 200)'}
                     </Text>
                     {currentUser?.points >= 200 && usePoints && (
@@ -326,7 +348,7 @@ const CartScreen = ({cart, setCart, currentUser, navigation, onOrderSuccess}: an
                 </TouchableOpacity>
               </View>
 
-              <View style={styles.divider} />
+              <View style={[styles.divider, {backgroundColor: theme.colors.border}]} />
 
               {/* Pricing Summary */}
               <View style={styles.totalContainer}>
