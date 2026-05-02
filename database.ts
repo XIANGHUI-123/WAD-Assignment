@@ -15,7 +15,7 @@ export type User = {
 };
 
 export type Book = {
-  id: number;
+  id: number | string;
   title: string;
   author: string;
   price: number;
@@ -26,7 +26,7 @@ export type Book = {
 };
 
 export type CartItem = {
-  bookId: number;
+  bookId: number | string;
   title: string;
   price: number;
   quantity: number;
@@ -224,8 +224,22 @@ export const saveVouchers = async (vouchers: Voucher[]) => {
 };
 
 export const getAvailableVouchers = async (): Promise<Voucher[]> => {
-  const vouchers = await getVouchers();
-  return vouchers.filter(v => !v.isUsed && v.currentUses < v.maxUses);
+  let vouchers = await getVouchers();
+
+  if (!vouchers || vouchers.length === 0) {
+    await seedAdminAndBooks();
+    vouchers = await getVouchers();
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return vouchers.filter(v => {
+    const expiryDate = new Date(v.expiryDate);
+    expiryDate.setHours(0, 0, 0, 0);
+
+    return !v.isUsed && v.currentUses < v.maxUses && expiryDate >= today;
+  });
 };
 
 export const markVoucherAsUsed = async (voucherId: number) => {
@@ -285,7 +299,7 @@ export const seedAdminAndBooks = async () => {
         username: 'Alicia',
         password: 'Alicia123',
         role: 'customer',
-        points: 0,
+        points: 200,
       },
       {
         id: 3,
@@ -368,14 +382,14 @@ export const seedAdminAndBooks = async () => {
 
   if (books.length === 0) {
     books = [
-      { id: 1, title: 'Python Crash Course', author: 'Eric Matthes', price: 39.9, stock: 10, category: 'Programming', image: 'https://picsum.photos/200' },
-      { id: 2, title: 'Database Essentials', author: 'Alice Tan', price: 30, stock: 8, category: 'Database', image: 'https://picsum.photos/201' },
-      { id: 3, title: 'Java Basics', author: 'John Lee', price: 25, stock: 12, category: 'Programming', image: 'https://picsum.photos/202' },
-      { id: 4, title: 'C++ Mastery', author: 'David Lim', price: 45, stock: 6, category: 'Programming', image: 'https://picsum.photos/203' },
-      { id: 5, title: 'Web Development Guide', author: 'Sarah Ng', price: 35, stock: 9, category: 'Web', image: 'https://picsum.photos/204' },
-      { id: 6, title: 'UI/UX Design', author: 'Emily Wong', price: 28, stock: 7, category: 'Design', image: 'https://picsum.photos/205' },
-      { id: 7, title: 'Machine Learning Intro', author: 'Alan Teo', price: 50, stock: 5, category: 'AI', image: 'https://picsum.photos/206' },
-      { id: 8, title: 'Mobile App Dev', author: 'Chris Tan', price: 32, stock: 11, category: 'Mobile', image: 'https://picsum.photos/207' },
+      { id: 100, title: 'Python Crash Course', author: 'Eric Matthes', price: 39.9, stock: 10, category: 'Programming', image: 'https://learning.oreilly.com/library/cover/9781718502710/250w/' },
+      { id: 200, title: 'Database Essentials', author: 'Alice Tan', price: 30, stock: 8, category: 'Database', image: 'https://learning.oreilly.com/library/cover/9780134685991/250w/' },
+      { id: 300, title: 'Java Basics', author: 'John Lee', price: 25, stock: 12, category: 'Programming', image: 'https://learning.oreilly.com/library/cover/9780134685991/250w/' },
+      { id: 400, title: 'C++ Mastery', author: 'David Lim', price: 45, stock: 6, category: 'Programming', image: 'https://learning.oreilly.com/library/cover/9780134685991/250w/' },
+      { id: 500, title: 'Web Development Guide', author: 'Sarah Ng', price: 35, stock: 9, category: 'Web', image: 'https://learning.oreilly.com/library/cover/9780134685991/250w/' },
+      { id: 600, title: 'UI/UX Design', author: 'Emily Wong', price: 28, stock: 7, category: 'Design', image: 'https://learning.oreilly.com/library/cover/9780134685991/250w/' },
+      { id: 700, title: 'Machine Learning Intro', author: 'Alan Teo', price: 50, stock: 5, category: 'AI', image: 'https://learning.oreilly.com/library/cover/9780134685991/250w/' },
+      { id: 800, title: 'Mobile App Dev', author: 'Chris Tan', price: 32, stock: 11, category: 'Mobile', image: 'https://learning.oreilly.com/library/cover/9780134685991/250w/' },
     ];
 
     await saveBooks(books);
@@ -393,7 +407,7 @@ export const seedAdminAndBooks = async () => {
         discountType: 'percentage',
         discountValue: 10,
         description: 'Save 10% on your purchase',
-        expiryDate: '2025-12-31',
+        expiryDate: '2026-6-10',
         maxUses: 100,
         currentUses: 0,
         isUsed: false,
@@ -404,7 +418,7 @@ export const seedAdminAndBooks = async () => {
         discountType: 'percentage',
         discountValue: 20,
         description: 'Save 20% on your purchase',
-        expiryDate: '2025-12-31',
+        expiryDate: '2026-7-15',
         maxUses: 50,
         currentUses: 0,
         isUsed: false,
@@ -415,7 +429,7 @@ export const seedAdminAndBooks = async () => {
         discountType: 'fixed',
         discountValue: 100,
         description: 'Flat RM 100 discount',
-        expiryDate: '2025-12-31',
+        expiryDate: '2026-12-31',
         maxUses: 30,
         currentUses: 0,
         isUsed: false,
@@ -426,7 +440,7 @@ export const seedAdminAndBooks = async () => {
         discountType: 'percentage',
         discountValue: 15,
         description: 'Welcome bonus - 15% off',
-        expiryDate: '2025-12-31',
+        expiryDate: '2026-8-31',
         maxUses: 200,
         currentUses: 0,
         isUsed: false,
@@ -437,7 +451,7 @@ export const seedAdminAndBooks = async () => {
         discountType: 'fixed',
         discountValue: 50,
         description: 'Flat RM 50 discount',
-        expiryDate: '2025-12-31',
+        expiryDate: '2026-8-13',
         maxUses: 75,
         currentUses: 0,
         isUsed: false,
@@ -446,4 +460,40 @@ export const seedAdminAndBooks = async () => {
 
     await saveVouchers(vouchers);
   }
+
+  if (orders.length === 0) {
+  orders = [
+    {
+      id: 1,
+      customerId: 2,
+      customerName: 'Alicia',
+      items: [
+        { 
+          bookId: 100, 
+          title: 'Python Crash Course', 
+          price: 39.9, 
+          quantity: 1, 
+          image: 'https://learning.oreilly.com/library/cover/9781718502710/250w/' 
+        },
+        { 
+          bookId: 200, 
+          title: 'Database Essentials', 
+          price: 30, 
+          quantity: 1, 
+          image: 'https://learning.oreilly.com/library/cover/9780134685991/250w/' 
+        },
+      ],
+      total: 69.9,
+      discount: 6.99,
+      finalTotal: 62.91,
+      voucherApplied: 'SAVE10',
+      pointsUsed: 0,
+      pointsEarned: 62,
+      status: 'Pending',
+      date: '2026-05-01',
+    },
+  ];
+
+  await saveOrders(orders);
+}
 };  
