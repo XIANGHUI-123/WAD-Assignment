@@ -1,15 +1,17 @@
 import React from 'react';
 import {StyleSheet, Text, TouchableOpacity, View, ScrollView} from 'react-native';
 import {logoutUser} from './database';
+import {useAppTheme} from './theme';
 
 const ProfileScreen = ({currentUser, onLogout, navigation}: any) => {
+  const {theme} = useAppTheme();
   const handleLogout = async () => {
     await logoutUser();
     onLogout();
   };
 
   // Helper component for list items to keep code DRY
-  const MenuLink = ({label, onPress, icon = "→"}) => (
+  const MenuLink = ({label, onPress, icon = "→"}: {label: string; onPress: () => void; icon?: string}) => (
     <TouchableOpacity style={styles.menuItem} onPress={onPress}>
       <Text style={styles.menuText}>{label}</Text>
       <Text style={styles.menuArrow}>{icon}</Text>
@@ -17,38 +19,39 @@ const ProfileScreen = ({currentUser, onLogout, navigation}: any) => {
   );
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, {backgroundColor: theme.colors.background}]}>
       {/* Header Section with Avatar */}
       <View style={styles.headerSection}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
+        <View style={[styles.avatar, {backgroundColor: theme.colors.primary}]}>
+          <Text style={[styles.avatarText, {color: '#fff'}]}>
             {currentUser?.username?.charAt(0).toUpperCase() || 'U'}
           </Text>
         </View>
-        <Text style={styles.userName}>{currentUser?.username}</Text>
-        <View style={styles.roleBadge}>
-          <Text style={styles.roleText}>{currentUser?.role?.toUpperCase()}</Text>
+        <Text style={[styles.userName, {color: theme.colors.text}]}>{currentUser?.username}</Text>
+        <View style={[styles.roleBadge, {backgroundColor: theme.colors.secondaryBackground}]}>
+          <Text style={[styles.roleText, {color: theme.colors.primary}]}>{currentUser?.role?.toUpperCase()}</Text>
         </View>
       </View>
 
       {/* General Section */}
-      <Text style={styles.sectionTitle}>Account Settings</Text>
-      <View style={styles.card}>
-        <MenuLink label="Order History" onPress={() => navigation.navigate('OrderHistory')} />
+      <Text style={[styles.sectionTitle, {color: theme.colors.mutedText}]}>Account Settings</Text>
+      <View style={[styles.card, {backgroundColor: theme.colors.surface, borderColor: theme.colors.border}]}>
+       <MenuLink label="Order History"onPress={() =>navigation.navigate('ManageOrdersMain')}
+/>
         <View style={styles.divider} />
         <MenuLink label="Settings" onPress={() => navigation.navigate('Settings')} />
-        <View style={styles.divider} />
-        <MenuLink label="Notifications" onPress={() => {}} />
+        
+        
       </View>
 
       {/* Admin Section (Conditional) */}
       {currentUser?.role === 'admin' && (
         <>
-          <Text style={styles.sectionTitle}>Administrator Controls</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, {color: theme.colors.mutedText}]}>Administrator Controls</Text>
+          <View style={[styles.card, {backgroundColor: theme.colors.surface, borderColor: theme.colors.border}]}>
             <MenuLink label="Manage Books Catalog" onPress={() => navigation.navigate('ManageBooks')} />
             <View style={styles.divider} />
-            <MenuLink label="Manage All Orders" onPress={() => navigation.navigate('ManageOrders')} />
+            <MenuLink label="Manage All Orders" onPress={() => navigation.navigate('ManageOrdersMain')} />
             
           </View>
         </>
@@ -59,7 +62,7 @@ const ProfileScreen = ({currentUser, onLogout, navigation}: any) => {
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
       
-      <Text style={styles.footerVersion}>App Version 1.0.4 (Production)</Text>
+      <Text style={[styles.footerVersion, {color: theme.colors.mutedText}]}>App Version 1.0.4 (Production)</Text>
     </ScrollView>
   );
 };
@@ -67,7 +70,7 @@ const ProfileScreen = ({currentUser, onLogout, navigation}: any) => {
 export default ProfileScreen;
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#F8FAFC', padding: 20},
+  container: {flex: 1, padding: 20},
   
   // Header Styles
   headerSection: {alignItems: 'center', marginVertical: 30},
@@ -81,25 +84,24 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     elevation: 3,
   },
-  avatarText: {color: '#fff', fontSize: 32, fontWeight: 'bold'},
-  userName: {fontSize: 22, fontWeight: '700', color: '#1E293B'},
+  avatarText: {fontSize: 32, fontWeight: 'bold'},
+  userName: {fontSize: 22, fontWeight: '700'},
   roleBadge: {
-    backgroundColor: '#E2E8F0', 
     paddingHorizontal: 12, 
     paddingVertical: 4, 
     borderRadius: 20, 
     marginTop: 6
   },
-  roleText: {fontSize: 12, fontWeight: '600', color: '#64748B'},
+  roleText: {fontSize: 12, fontWeight: '600'},
 
   // List Card Styles
-  sectionTitle: {fontSize: 14, fontWeight: '600', color: '#94A3B8', marginBottom: 8, marginLeft: 4},
+  sectionTitle: {fontSize: 14, fontWeight: '600', marginBottom: 8, marginLeft: 4},
   card: {
-    backgroundColor: '#fff',
     borderRadius: 16,
     paddingVertical: 8,
     marginBottom: 24,
-    shadowColor: '#000',
+    borderWidth: 1,
+    shadowColor: '#f7efef',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
@@ -111,7 +113,7 @@ const styles = StyleSheet.create({
     padding: 16, 
     alignItems: 'center'
   },
-  menuText: {fontSize: 16, color: '#334155', fontWeight: '500'},
+  menuText: {fontSize: 16, fontWeight: '500'},
   menuArrow: {fontSize: 18, color: '#CBD5E1'},
   divider: {height: 1, backgroundColor: '#F1F5F9', marginHorizontal: 16},
 
