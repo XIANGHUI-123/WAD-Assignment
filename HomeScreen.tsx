@@ -5,20 +5,30 @@ import {
   TouchableOpacity,
   View,
   ScrollView,
-  Image,
 } from 'react-native';
+import {DrawerActions} from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import {useAppTheme} from './theme';
 
 const HomeScreen = ({navigation, currentUser, cartCount}: any) => {
+  const {theme} = useAppTheme();
+  const openDrawer = () => navigation.dispatch(DrawerActions.openDrawer());
+
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header Section */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Welcome Back! 👋</Text>
-          <Text style={styles.username}>{currentUser?.username}</Text>
-        </View>
-        <View style={styles.badge}>
+    <>
+      <ScrollView style={[styles.container, {backgroundColor: theme.colors.background}]} showsVerticalScrollIndicator={false}>
+        {/* Header Section */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity onPress={openDrawer} style={styles.menuButton}>
+              <MaterialCommunityIcons name="menu" size={28} color={theme.colors.text} />
+            </TouchableOpacity>
+            <View>
+              <Text style={[styles.greeting, {color: theme.colors.mutedText}]}>Welcome Back! 👋</Text>
+              <Text style={[styles.username, {color: theme.colors.text}]}>{currentUser?.username}</Text>
+            </View>
+          </View>
+        <View style={[styles.badge, {backgroundColor: theme.colors.secondaryBackground}]}>
           <MaterialCommunityIcons name="bookshelf" size={32} color="#4F46E5" />
         </View>
       </View>
@@ -26,16 +36,16 @@ const HomeScreen = ({navigation, currentUser, cartCount}: any) => {
       {/* Cart Summary Card */}
       {cartCount > 0 && (
         <TouchableOpacity
-          style={styles.cartCard}
+          style={[styles.cartCard, {backgroundColor: theme.colors.secondaryBackground, borderColor: theme.colors.border}]}
           onPress={() => navigation.navigate('ProductTab', {screen: 'Cart'})}>
           <View style={styles.cartContent}>
             <View>
-              <Text style={styles.cartLabel}>Items in Cart</Text>
-              <Text style={styles.cartCount}>{cartCount} item{cartCount !== 1 ? 's' : ''}</Text>
+              <Text style={[styles.cartLabel, {color: theme.colors.mutedText}]}>Items in Cart</Text>
+              <Text style={[styles.cartCount, {color: theme.colors.text}]}>{cartCount} item{cartCount !== 1 ? 's' : ''}</Text>
             </View>
-            <View style={styles.cartBadge}>
+            <View style={[styles.cartBadge, {backgroundColor: theme.colors.primary}]}>
               <MaterialCommunityIcons
-                name="shopping-cart"
+                name="cart"
                 size={24}
                 color="#fff"
               />
@@ -46,27 +56,27 @@ const HomeScreen = ({navigation, currentUser, cartCount}: any) => {
 
       {/* Rewards Section */}
       <View style={styles.rewardsContainer}>
-        <Text style={styles.sectionTitle}>Rewards & Savings</Text>
+        <Text style={[styles.sectionTitle, {color: theme.colors.text}]}>Rewards & Savings</Text>
         <View style={styles.rewardsRow}>
           <TouchableOpacity 
-            style={styles.rewardCard}
+            style={[styles.rewardCard, {backgroundColor: theme.colors.surface, borderColor: theme.colors.border}]}
             onPress={() => navigation.navigate('HomeTab', {screen: 'VouchersList'})}>
             <MaterialCommunityIcons name="ticket-percent" size={28} color="#D97706" />
-            <Text style={styles.rewardValue}>Vouchers</Text>
-            <Text style={styles.rewardSubtext}>Get discounts</Text>
+            <Text style={[styles.rewardValue, {color: theme.colors.text}]}>Vouchers</Text>
+            <Text style={[styles.rewardSubtext, {color: theme.colors.mutedText}]}>Get discounts</Text>
           </TouchableOpacity>
-          <View style={styles.rewardCard}>
+          <View style={[styles.rewardCard, {backgroundColor: theme.colors.surface, borderColor: theme.colors.border}]}>
             <MaterialCommunityIcons name="star-circle" size={28} color="#F59E0B" />
-            <Text style={styles.rewardValue}>Points</Text>
-            <Text style={styles.pointsValue}>{currentUser?.points || 0}</Text>
-            <Text style={styles.rewardSubtext}>200 pts = 1 book</Text>
+            <Text style={[styles.rewardValue, {color: theme.colors.text}]}>Points</Text>
+            <Text style={[styles.pointsValue, {color: theme.colors.primary}]}>{currentUser?.points || 0}</Text>
+            <Text style={[styles.rewardSubtext, {color: theme.colors.mutedText}]}>200 pts = 1 book</Text>
           </View>
         </View>
-        <View style={styles.rewardInfoCard}>
+        <View style={[styles.rewardInfoCard, {backgroundColor: theme.colors.secondaryBackground, borderColor: theme.colors.border}]}>
           <MaterialCommunityIcons name="information" size={20} color="#4F46E5" />
           <View style={{flex: 1, marginLeft: 12}}>
-            <Text style={styles.rewardInfoTitle}>Earn & Redeem</Text>
-            <Text style={styles.rewardInfoText}>
+            <Text style={[styles.rewardInfoTitle, {color: theme.colors.primary}]}>Earn & Redeem</Text>
+            <Text style={[styles.rewardInfoText, {color: theme.colors.primary}] }>
               • Earn 1 point per RM spent
               • Redeem 200 points for a free book
               • Use vouchers for instant discounts
@@ -77,7 +87,7 @@ const HomeScreen = ({navigation, currentUser, cartCount}: any) => {
 
       {/* Action Cards */}
       <View style={styles.actionSection}>
-        <Text style={styles.sectionTitle}>Explore</Text>
+        <Text style={[styles.sectionTitle, {color: theme.colors.text}]}>Explore</Text>
 
         <TouchableOpacity
           style={[styles.actionCard, styles.primaryCard]}
@@ -97,7 +107,7 @@ const HomeScreen = ({navigation, currentUser, cartCount}: any) => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.actionCard, styles.secondaryCard]}
+          style={[styles.actionCard, styles.secondaryCard, {backgroundColor: theme.colors.surface, borderColor: theme.colors.border}]}
           onPress={() => navigation.navigate('HomeTab', {screen: 'OrderHistory'})}>
           <View style={styles.actionLeft}>
             <MaterialCommunityIcons
@@ -106,8 +116,8 @@ const HomeScreen = ({navigation, currentUser, cartCount}: any) => {
               color="#4F46E5"
             />
             <View style={{marginLeft: 12}}>
-              <Text style={styles.actionTitle2}>Order History</Text>
-              <Text style={styles.actionSubtitle2}>
+              <Text style={[styles.actionTitle2, {color: theme.colors.text}]}>Order History</Text>
+              <Text style={[styles.actionSubtitle2, {color: theme.colors.mutedText}]}>
                 Track your orders
               </Text>
             </View>
@@ -116,13 +126,13 @@ const HomeScreen = ({navigation, currentUser, cartCount}: any) => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.actionCard, styles.tertiaryCard]}
+          style={[styles.actionCard, styles.tertiaryCard, {backgroundColor: theme.colors.successBackground, borderColor: theme.colors.border}]}
           onPress={() => navigation.navigate('ProfileTab')}>
           <View style={styles.actionLeft}>
             <MaterialCommunityIcons name="account-details" size={32} color="#059669" />
             <View style={{marginLeft: 12}}>
-              <Text style={styles.actionTitle3}>My Profile</Text>
-              <Text style={styles.actionSubtitle3}>
+              <Text style={[styles.actionTitle3, {color: theme.colors.text}]}>My Profile</Text>
+              <Text style={[styles.actionSubtitle3, {color: theme.colors.mutedText}]}>
                 Manage account
               </Text>
             </View>
@@ -133,40 +143,41 @@ const HomeScreen = ({navigation, currentUser, cartCount}: any) => {
 
       {/* Features Section */}
       <View style={styles.featuresSection}>
-        <Text style={styles.sectionTitle}>Why Choose Us?</Text>
-        <View style={styles.featureItem}>
+        <Text style={[styles.sectionTitle, {color: theme.colors.text}]}>Why Choose Us?</Text>
+        <View style={[styles.featureItem, {backgroundColor: theme.colors.surface, borderColor: theme.colors.border}]}>
           <View style={styles.featureIcon}>
             <MaterialCommunityIcons name="truck-fast" size={20} color="#4F46E5" />
           </View>
           <View style={{flex: 1}}>
-            <Text style={styles.featureTitle}>Fast Delivery</Text>
-            <Text style={styles.featureText}>Quick and reliable book delivery</Text>
+            <Text style={[styles.featureTitle, {color: theme.colors.text}]}>Fast Delivery</Text>
+            <Text style={[styles.featureText, {color: theme.colors.mutedText}]}>Quick and reliable book delivery</Text>
           </View>
         </View>
 
-        <View style={styles.featureItem}>
+        <View style={[styles.featureItem, {backgroundColor: theme.colors.surface, borderColor: theme.colors.border}]}>
           <View style={styles.featureIcon}>
             <MaterialCommunityIcons name="shield-check" size={20} color="#4F46E5" />
           </View>
           <View style={{flex: 1}}>
-            <Text style={styles.featureTitle}>Secure Payment</Text>
-            <Text style={styles.featureText}>Your transactions are safe and secure</Text>
+            <Text style={[styles.featureTitle, {color: theme.colors.text}]}>Secure Payment</Text>
+            <Text style={[styles.featureText, {color: theme.colors.mutedText}]}>Your transactions are safe and secure</Text>
           </View>
         </View>
 
-        <View style={styles.featureItem}>
+        <View style={[styles.featureItem, {backgroundColor: theme.colors.surface, borderColor: theme.colors.border}]}>
           <View style={styles.featureIcon}>
             <MaterialCommunityIcons name="star" size={20} color="#4F46E5" />
           </View>
           <View style={{flex: 1}}>
-            <Text style={styles.featureTitle}>Best Selection</Text>
-            <Text style={styles.featureText}>Thousands of books to choose from</Text>
+            <Text style={[styles.featureTitle, {color: theme.colors.text}]}>Best Selection</Text>
+            <Text style={[styles.featureText, {color: theme.colors.mutedText}]}>Thousands of books to choose from</Text>
           </View>
         </View>
       </View>
 
       <View style={{height: 30}} />
-    </ScrollView>
+      </ScrollView>
+    </>
   );
 };
 
@@ -175,7 +186,6 @@ export default HomeScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
     paddingHorizontal: 16,
     paddingTop: 16,
   },
@@ -184,6 +194,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 24,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  menuButton: {
+    marginRight: 12,
   },
   greeting: {
     fontSize: 16,
@@ -205,10 +222,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cartCard: {
-    backgroundColor: '#FEF3C7',
     borderRadius: 14,
     padding: 16,
     marginBottom: 24,
+    borderWidth: 1,
     borderLeftWidth: 4,
     borderLeftColor: '#F59E0B',
   },
@@ -252,12 +269,10 @@ const styles = StyleSheet.create({
   },
   rewardCard: {
     flex: 1,
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
   rewardValue: {
     fontSize: 16,
@@ -277,12 +292,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   rewardInfoCard: {
-    backgroundColor: '#EEF2FF',
     borderRadius: 12,
     padding: 14,
     flexDirection: 'row',
     borderWidth: 1,
-    borderColor: '#C7D2FE',
   },
   rewardInfoTitle: {
     fontSize: 14,
@@ -356,11 +369,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
-    backgroundColor: '#fff',
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
   featureIcon: {
     width: 44,
@@ -381,4 +392,44 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 2,
   },
+  modalOverlay: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  modalBackground: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  sideMenu: {
+    width: 280,
+    backgroundColor: '#fff',
+    height: '100%',
+    padding: 24,
+    paddingTop: 60,
+  },
+  menuHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  menuTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1E293B',
+  },
+  sideMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  sideMenuItemText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#334155',
+    marginLeft: 16,
+  },
 });
+
