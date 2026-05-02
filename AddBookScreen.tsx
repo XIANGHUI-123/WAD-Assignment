@@ -1,34 +1,51 @@
 import React, {useState} from 'react';
 import {
-  View,
+  Alert,
+  StyleSheet,
   Text,
   TextInput,
-  StyleSheet,
   TouchableOpacity,
-  Alert,
+  View,
 } from 'react-native';
-import {addBook} from './database';
+import {addBook, Book} from './database';
+import {useAppTheme} from './theme';
 
 const AddBookScreen = ({navigation}: any) => {
+  const {theme} = useAppTheme();
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [price, setPrice] = useState('');
   const [stock, setStock] = useState('');
   const [category, setCategory] = useState('');
+  const [image, setImage] = useState('');
 
   const handleAddBook = async () => {
     if (!title || !author || !price || !stock || !category) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
 
-    const newBook = {
+    const numericPrice = Number(price);
+    const numericStock = Number(stock);
+
+    if (Number.isNaN(numericPrice) || numericPrice <= 0) {
+      Alert.alert('Error', 'Please enter a valid price');
+      return;
+    }
+
+    if (Number.isNaN(numericStock) || numericStock < 0) {
+      Alert.alert('Error', 'Please enter a valid stock quantity');
+      return;
+    }
+
+    const newBook: Book = {
       id: Date.now(),
       title,
       author,
-      price: Number(price),
-      stock: Number(stock),
+      price: numericPrice,
+      stock: numericStock,
       category,
+      image: image.trim() || 'https://via.placeholder.com/150',
     };
 
     await addBook(newBook);
@@ -37,43 +54,104 @@ const AddBookScreen = ({navigation}: any) => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Add Book</Text>
+    <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
+      <Text style={[styles.title, {color: theme.colors.text}]}>Add Book</Text>
 
       <TextInput
-        style={styles.input}
-        placeholder="Book Title"
+        style={[
+          styles.input,
+          {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.border,
+            color: theme.colors.text,
+          },
+        ]}
+        placeholder="Title *"
+        placeholderTextColor={theme.colors.mutedText}
         value={title}
         onChangeText={setTitle}
       />
+
       <TextInput
-        style={styles.input}
-        placeholder="Author"
+        style={[
+          styles.input,
+          {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.border,
+            color: theme.colors.text,
+          },
+        ]}
+        placeholder="Author *"
+        placeholderTextColor={theme.colors.mutedText}
         value={author}
         onChangeText={setAuthor}
       />
+
       <TextInput
-        style={styles.input}
-        placeholder="Price"
+        style={[
+          styles.input,
+          {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.border,
+            color: theme.colors.text,
+          },
+        ]}
+        placeholder="Price *"
+        placeholderTextColor={theme.colors.mutedText}
         value={price}
         onChangeText={setPrice}
         keyboardType="numeric"
       />
+
       <TextInput
-        style={styles.input}
-        placeholder="Stock"
+        style={[
+          styles.input,
+          {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.border,
+            color: theme.colors.text,
+          },
+        ]}
+        placeholder="Stock *"
+        placeholderTextColor={theme.colors.mutedText}
         value={stock}
         onChangeText={setStock}
         keyboardType="numeric"
       />
+
       <TextInput
-        style={styles.input}
-        placeholder="Category"
+        style={[
+          styles.input,
+          {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.border,
+            color: theme.colors.text,
+          },
+        ]}
+        placeholder="Category *"
+        placeholderTextColor={theme.colors.mutedText}
         value={category}
         onChangeText={setCategory}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleAddBook}>
+      <TextInput
+        style={[
+          styles.input,
+          {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.border,
+            color: theme.colors.text,
+          },
+        ]}
+        placeholder="Image URL optional"
+        placeholderTextColor={theme.colors.mutedText}
+        value={image}
+        onChangeText={setImage}
+      />
+
+      <TouchableOpacity
+        style={[styles.button, {backgroundColor: theme.colors.primary}]}
+        onPress={handleAddBook}>
         <Text style={styles.buttonText}>Save Book</Text>
       </TouchableOpacity>
     </View>
@@ -83,20 +161,19 @@ const AddBookScreen = ({navigation}: any) => {
 export default AddBookScreen;
 
 const styles = StyleSheet.create({
-  container: {flex: 1, padding: 20, backgroundColor: '#fff'},
+  container: {flex: 1, padding: 20},
   title: {fontSize: 26, fontWeight: 'bold', marginBottom: 20},
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 10,
     padding: 12,
     marginBottom: 12,
   },
   button: {
-    backgroundColor: '#16A34A',
     padding: 14,
     borderRadius: 10,
     alignItems: 'center',
+    marginTop: 8,
   },
   buttonText: {color: '#fff', fontWeight: 'bold'},
 });
